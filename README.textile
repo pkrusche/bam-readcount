@@ -18,6 +18,8 @@ Available options:
   -l [ --site-list ] arg                file containing a list of regions to
                                         report readcounts within.
   -f [ --reference-fasta ] arg          reference sequence in the fasta format.
+  -Z [ --print-mapq0-count ] arg        Count MapQ=0 reads overlapping with
+                                        each location.
   -D [ --print-individual-mapq ] arg    report the mapping qualities as a comma
                                         separated list.
   -p [ --per-library ]                  report results by library.
@@ -38,7 +40,9 @@ h3. Normal Output
 
 The output format is as follows:
 
-bc. chr	position	reference_base	depth	base:count:avg_mapping_quality:avg_basequality:avg_se_mapping_quality:num_plus_strand:num_minus_strand:avg_pos_as_fraction:avg_num_mismatches_as_fraction:avg_sum_mismatch_qualities:num_q2_containing_reads:avg_distance_to_q2_start_in_q2_reads:avg_clipped_length:avg_distance_to_effective_3p_end   ...
+bc. chr	position	reference_base	depth[:mq0]	base:count:avg_mapping_quality:avg_basequality:avg_se_mapping_quality:num_plus_strand:num_minus_strand:avg_pos_as_fraction:avg_num_mismatches_as_fraction:avg_sum_mismatch_qualities:num_q2_containing_reads:avg_distance_to_q2_start_in_q2_reads:avg_clipped_length:avg_distance_to_effective_3p_end   ...
+
+When -Z 1 is supplied, the number of mapq zero reads is written out together with depth (mq0).
 
 Each tab separated field contains the following information, each one is tab-separated:
 

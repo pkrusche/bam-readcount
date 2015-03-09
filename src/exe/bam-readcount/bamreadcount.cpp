@@ -73,6 +73,7 @@ typedef struct {
     int distribution;   //whether or not to display all mapping qualities
     bool per_lib;
     bool insertion_centric;
+    bool count_mq0;  // write MQ0 depth
     std::set<std::string> lib_names;
     indel_queue_map_t indel_queue_map;
 } pileup_data_t;
@@ -267,6 +268,7 @@ static int pileup_func(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *p
     if ((int)pos >= tmp->beg - 1 && (int)pos < tmp->end) {
 
         int mapq_n = 0; //this tracks the number of reads that passed the mapping quality threshold
+        int mapq0_n = 0; // mapq 0 count
 
         std::map<std::string, LibraryCounts> lib_counts;
 
@@ -286,6 +288,10 @@ static int pileup_func(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *p
             if(!base->is_del && base->b->core.qual >= tmp->min_mapq && bam1_qual(base->b)[base->qpos] >= tmp->min_bq) {
                 mapq_n++;
 
+                if (base->b->core.qual == 0)
+                {
+                    ++mapq0_n;
+                }
 
                 if(base->indel != 0 && tmp->ref) {
                     //indel containing read exists here
@@ -399,7 +405,11 @@ static int pileup_func(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *p
             }
         }
         if ((int)pos >= tmp->beg && (int)pos < tmp->end) {
-            cout << ref_name << "\t" << pos + 1 << "\t" << ref_base << "\t" << mapq_n + extra_depth << record.str() << endl;
+            cout << ref_name << "\t" << pos + 1 << "\t" << ref_base << "\t" << mapq_n + extra_depth;
+            if(tmp->count_mq0) {
+                cout << ":" << mapq0_n;
+            }
+            cout << record.str() << endl;
         }
     }
     return 0;
@@ -410,6 +420,7 @@ int main(int argc, char *argv[])
     bool distribution = false;
     bool per_lib = false;
     bool insertion_centric = false;
+    bool count_mq0 = false;
     string fn_pos, fn_fa;
     int64_t max_warnings = -1;
 
@@ -426,6 +437,7 @@ int main(int argc, char *argv[])
         ("max-count,d", po::value<int>(&(d.max_cnt))->default_value(10000000), "max depth to avoid excessive memory usage.")
         ("site-list,l", po::value<string>(&fn_pos), "file containing a list of regions to report readcounts within.") 
         ("reference-fasta,f", po::value<string>(&fn_fa), "reference sequence in the fasta format.") 
+        ("print-mapq0-count,Z", po::value<bool>(&count_mq0), "Count MapQ=0 reads overlapping with each location.")
         ("print-individual-mapq,D", po::value<bool>(&distribution), "report the mapping qualities as a comma separated list.")
         ("per-library,p", po::bool_switch(&per_lib), "report results by library.")
         ("max-warnings,w", po::value<int64_t>(&max_warnings), "maximum number of warnings of each type to emit. -1 gives an unlimited number.")
@@ -488,6 +500,7 @@ int main(int argc, char *argv[])
     d.beg = 0; d.end = 0x7fffffff;
     d.distribution = distribution;
     d.per_lib = per_lib;
+    d.count_mq0 = count_mq0;
     d.insertion_centric = insertion_centric;
     d.in = samopen(vm["bam-file"].as<string>().c_str(), "rb", 0);
     d.in->header->dict = sam_header_parse2(d.in->header->text);
